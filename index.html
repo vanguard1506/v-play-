@@ -1,11 +1,1020 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V-Play Ultimate League</title>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0a0f1c, #111a33);
+  color: white;
+  min-height: 100vh;
+}
+
+/* AUTH SECTION */
+#auth {
+  width: 100%;
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 30px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+#auth h2 {
+  text-align: center;
+  margin: 0 0 25px;
+  font-size: 28px;
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.auth-group {
+  margin-bottom: 15px;
+}
+
+.auth-group label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: #00ffcc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="tel"],
+input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(0,255,204,0.3);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+input[type="number"]:focus {
+  outline: none;
+  border-color: #00ffcc;
+  background: rgba(0,255,204,0.1);
+  box-shadow: 0 0 10px rgba(0,255,204,0.2);
+}
+
+input::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+
+.error {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 5px;
+  display: none;
+}
+
+.error.show {
+  display: block;
+}
+
+/* BUTTONS */
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  color: #0a0f1c;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,255,204,0.3);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(0,255,204,0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(0,255,204,0.1);
+}
+
+.btn-danger {
+  background: rgba(255,107,107,0.7);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: rgba(255,107,107,1);
+  box-shadow: 0 8px 20px rgba(255,107,107,0.3);
+}
+
+/* APP */
+#app {
+  display: none;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* NAV */
+nav {
+  display: flex;
+  overflow-x: auto;
+  background: rgba(255,255,255,0.05);
+  padding: 10px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  gap: 5px;
+  border: 1px solid rgba(0,255,204,0.2);
+}
+
+nav button {
+  flex: 0 0 auto;
+  padding: 10px 20px;
+  margin: 0;
+  background: rgba(255,255,255,0.05);
+  color: white;
+  border: 1px solid rgba(0,255,204,0.2);
+}
+
+nav button:hover {
+  background: rgba(0,255,204,0.1);
+  border-color: #00ffcc;
+}
+
+nav button.active {
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  color: #0a0f1c;
+  border-color: #00ffcc;
+}
+
+/* SECTIONS */
+section {
+  display: none;
+  padding: 20px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(0,255,204,0.1);
+}
+
+section.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+section h2 {
+  margin-top: 0;
+  font-size: 24px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid rgba(0,255,204,0.3);
+  padding-bottom: 10px;
+}
+
+section h3 {
+  font-size: 16px;
+  margin-top: 20px;
+  color: #00ffcc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* INPUT GRID */
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.input-grid.full {
+  grid-template-columns: 1fr;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: #00ffcc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* CARDS */
+.card {
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 12px;
+  border-left: 4px solid #00ffcc;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  background: rgba(255,255,255,0.08);
+  transform: translateX(5px);
+}
+
+.card.stat {
+  border-left-color: #00ff88;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card.match {
+  border-left-color: #ffa500;
+  padding: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.card-header {
+  font-weight: 600;
+  color: #00ffcc;
+  margin-bottom: 5px;
+}
+
+.card-content {
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.card-actions button {
+  flex: 0 1 auto;
+  padding: 6px 12px;
+  font-size: 12px;
+  margin: 0;
+}
+
+/* CHAT */
+.chatbox {
+  height: 300px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.3);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(0,255,204,0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-message {
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-message.user {
+  background: rgba(0,255,204,0.2);
+  border-left: 3px solid #00ffcc;
+  align-self: flex-end;
+  max-width: 70%;
+}
+
+.chat-message.bot {
+  background: rgba(255,255,255,0.1);
+  border-left: 3px solid #00ff88;
+  align-self: flex-start;
+  max-width: 70%;
+}
+
+.chat-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.chat-input-group input {
+  flex: 1;
+}
+
+.chat-input-group button {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+}
+
+/* SUCCESS MESSAGE */
+.success {
+  background: rgba(0,255,204,0.2);
+  border: 1px solid #00ffcc;
+  color: #00ffcc;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: none;
+}
+
+.success.show {
+  display: block;
+  animation: slideIn 0.3s ease;
+}
+
+/* STATS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.stat-box {
+  background: rgba(0,255,204,0.1);
+  border: 1px solid rgba(0,255,204,0.3);
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.stat-box .label {
+  font-size: 12px;
+  color: #00ffcc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.stat-box .value {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .input-grid {
+    grid-template-columns: 1fr;
+  }
+
+  nav {
+    flex-wrap: wrap;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-message.user,
+  .chat-message.bot {
+    max-width: 100%;
+  }
+}
+
+/* LOGOUT */
+.logout-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background: rgba(255,107,107,0.6);
+  border: 1px solid rgba(255,107,107,0.8);
+  color: white;
+  font-size: 12px;
+  z-index: 1000;
+}
+
+.logout-btn:hover {
+  background: rgba(255,107,107,1);
+}
+</style>
 </head>
+
 <body>
-    <h1>Hello, World!</h1>
+
+<!-- AUTH -->
+<div id="auth">
+<h2>⚽ V-Play Access</h2>
+
+<div class="error" id="authError"></div>
+
+<div class="auth-group">
+  <label>Full Name</label>
+  <input id="name" type="text" placeholder="Enter your full name">
+</div>
+
+<div class="auth-group">
+  <label>Phone Number</label>
+  <input id="phone" type="tel" placeholder="Enter your phone number">
+</div>
+
+<div class="auth-group">
+  <label>Password</label>
+  <input id="password" type="password" placeholder="Enter your password">
+</div>
+
+<button onclick="register()">Register</button>
+<button onclick="login()" class="btn-secondary">Login</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<button class="logout-btn" onclick="logout()">🚪 Logout</button>
+
+<nav>
+<button class="nav-btn active" onclick="show('home', this)">Home</button>
+<button class="nav-btn" onclick="show('team', this)">Team</button>
+<button class="nav-btn" onclick="show('players', this)">Players</button>
+<button class="nav-btn" onclick="show('league', this)">League</button>
+<button class="nav-btn" onclick="show('chat', this)">Chat</button>
+</nav>
+
+<!-- HOME -->
+<section id="home" class="active">
+<h2>⚽ V-Play Ultimate League</h2>
+<div class="success" id="homeSuccess"></div>
+
+<div class="stats-grid">
+  <div class="stat-box">
+    <div class="label">Team Status</div>
+    <div class="value" id="teamStatus">−</div>
+  </div>
+  <div class="stat-box">
+    <div class="label">Total Players</div>
+    <div class="value" id="playerCount">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="label">League Points</div>
+    <div class="value" id="leaguePoints">0</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">System Status</div>
+  <div class="card-content">✅ System Online and Ready</div>
+</div>
+
+<button onclick="runSeason()">▶️ Simulate Match</button>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+<h2>🏆 Team Setup</h2>
+
+<div class="success" id="teamSuccess"></div>
+
+<div class="input-grid full">
+  <div class="input-group">
+    <label>Team Name</label>
+    <input id="teamName" type="text" placeholder="Enter team name">
+  </div>
+  <div class="input-group">
+    <label>Coach Name</label>
+    <input id="coach" type="text" placeholder="Enter coach name">
+  </div>
+</div>
+
+<button onclick="saveTeam()">💾 Save Team</button>
+
+<div id="teamDisplay"></div>
+</section>
+
+<!-- PLAYERS -->
+<section id="players">
+<h2>👥 Players Management (Max 60)</h2>
+
+<div class="success" id="playerSuccess"></div>
+
+<div class="input-grid">
+  <div class="input-group">
+    <label>Player Name</label>
+    <input id="playerName" type="text" placeholder="Enter player name">
+  </div>
+  <div class="input-group">
+    <label>Position</label>
+    <input id="rank" type="text" placeholder="e.g., Striker, Defender">
+  </div>
+  <div class="input-group">
+    <label>Overall Rating (1-100)</label>
+    <input id="overall" type="number" min="1" max="100" placeholder="e.g., 85">
+  </div>
+  <div class="input-group">
+    <label>Jersey Number</label>
+    <input id="jersey" type="number" min="1" max="99" placeholder="e.g., 7">
+  </div>
+</div>
+
+<button onclick="addPlayer()">➕ Add Player</button>
+
+<div id="playerList"></div>
+</section>
+
+<!-- LEAGUE -->
+<section id="league">
+<h2>🏆 League Table</h2>
+
+<h3>📊 Standings</h3>
+<div id="table"></div>
+
+<h3>📋 Match Results</h3>
+<div id="matches"></div>
+</section>
+
+<!-- CHAT -->
+<section id="chat">
+<h2>💬 Chat Room</h2>
+
+<div class="chatbox" id="chatBox"></div>
+
+<div class="chat-input-group">
+  <input id="msg" type="text" placeholder="Type message and press Enter...">
+  <button onclick="send()">Send</button>
+</div>
+</section>
+
+</div>
+
+<script>
+
+/* ===== DATABASE ===== */
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let team = JSON.parse(localStorage.getItem("team")) || { players: [] };
+let players = team.players || [];
+let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+let currentUser = null;
+
+/* ===== VALIDATION ===== */
+function validateName(name) {
+  return name && name.trim().length >= 2;
+}
+
+function validatePhone(phone) {
+  return phone && /^\d{10,}$/.test(phone.replace(/\D/g, ''));
+}
+
+function validatePassword(password) {
+  return password && password.length >= 6;
+}
+
+function showError(elementId, message) {
+  const errorDiv = document.getElementById(elementId);
+  errorDiv.textContent = message;
+  errorDiv.classList.add('show');
+  setTimeout(() => errorDiv.classList.remove('show'), 4000);
+}
+
+function showSuccess(elementId, message) {
+  const successDiv = document.getElementById(elementId);
+  successDiv.textContent = message;
+  successDiv.classList.add('show');
+  setTimeout(() => successDiv.classList.remove('show'), 3000);
+}
+
+/* ===== REGISTER ===== */
+function register(){
+  const nameVal = document.getElementById("name").value;
+  const phoneVal = document.getElementById("phone").value;
+  const passwordVal = document.getElementById("password").value;
+
+  // Validation
+  if (!validateName(nameVal)) {
+    showError('authError', '❌ Name must be at least 2 characters');
+    return;
+  }
+
+  if (!validatePhone(phoneVal)) {
+    showError('authError', '❌ Phone must be at least 10 digits');
+    return;
+  }
+
+  if (!validatePassword(passwordVal)) {
+    showError('authError', '❌ Password must be at least 6 characters');
+    return;
+  }
+
+  // Check if user already exists
+  if (users.find(u => u.phone === phoneVal)) {
+    showError('authError', '❌ Phone number already registered');
+    return;
+  }
+
+  users.push({
+    name: nameVal,
+    phone: phoneVal,
+    password: passwordVal
+  });
+
+  localStorage.setItem("users", JSON.stringify(users));
+  
+  // Clear inputs
+  document.getElementById("name").value = "";
+  document.getElementById("phone").value = "";
+  document.getElementById("password").value = "";
+  
+  showError('authError', '✅ Registration successful! Now login.');
+  document.getElementById("authError").style.color = '#00ffcc';
+}
+
+/* ===== LOGIN ===== */
+function login(){
+  const phoneVal = document.getElementById("phone").value;
+  const passwordVal = document.getElementById("password").value;
+
+  if (!phoneVal || !passwordVal) {
+    showError('authError', '❌ Please enter phone and password');
+    return;
+  }
+
+  const user = users.find(u => u.phone === phoneVal && u.password === passwordVal);
+
+  if(user){
+    currentUser = user;
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadChatHistory();
+    updateHomeStats();
+  } else {
+    showError('authError', '❌ Wrong phone or password');
+  }
+}
+
+/* ===== LOGOUT ===== */
+function logout(){
+  if(confirm("Are you sure you want to logout?")){
+    currentUser = null;
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("app").style.display = "none";
+    document.getElementById("name").value = "";
+    document.getElementById("phone").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("authError").classList.remove('show');
+  }
+}
+
+/* ===== NAV ===== */
+function show(id, btn){
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  
+  document.getElementById(id).classList.add("active");
+  btn.classList.add("active");
+}
+
+/* ===== HOME STATS ===== */
+function updateHomeStats(){
+  document.getElementById("teamStatus").textContent = team.name ? "✅ Active" : "⏳ Pending";
+  document.getElementById("playerCount").textContent = players.length;
+  
+  let totalPoints = 0;
+  for(let k in table){
+    totalPoints += table[k].p || 0;
+  }
+  document.getElementById("leaguePoints").textContent = totalPoints;
+}
+
+/* ===== TEAM ===== */
+function saveTeam(){
+  const teamNameVal = document.getElementById("teamName").value;
+  const coachVal = document.getElementById("coach").value;
+
+  if (!validateName(teamNameVal)) {
+    showError('teamSuccess', '❌ Team name must be at least 2 characters');
+    return;
+  }
+
+  if (!validateName(coachVal)) {
+    showError('teamSuccess', '❌ Coach name must be at least 2 characters');
+    return;
+  }
+
+  team.name = teamNameVal;
+  team.coach = coachVal;
+  team.players = players;
+
+  localStorage.setItem("team", JSON.stringify(team));
+
+  document.getElementById("teamDisplay").innerHTML =
+  `<div class="card stat">
+    <div>
+      <div class="card-header">🏆 ${team.name}</div>
+      <div class="card-content">Coach: <strong>${team.coach}</strong></div>
+      <div class="card-content">Players: <strong>${team.players.length}/60</strong></div>
+    </div>
+  </div>`;
+
+  showSuccess('teamSuccess', '✅ Team saved successfully!');
+  updateHomeStats();
+
+  document.getElementById("teamName").value = "";
+  document.getElementById("coach").value = "";
+}
+
+/* ===== PLAYERS ===== */
+function addPlayer(){
+  const playerNameVal = document.getElementById("playerName").value;
+  const rankVal = document.getElementById("rank").value;
+  const overallVal = Number(document.getElementById("overall").value);
+  const jerseyVal = Number(document.getElementById("jersey").value);
+
+  // Validation
+  if (!validateName(playerNameVal)) {
+    showError('playerSuccess', '❌ Player name must be at least 2 characters');
+    return;
+  }
+
+  if (!rankVal || rankVal.trim().length < 2) {
+    showError('playerSuccess', '❌ Please enter a valid position');
+    return;
+  }
+
+  if (!overallVal || overallVal < 1 || overallVal > 100) {
+    showError('playerSuccess', '❌ Overall rating must be between 1-100');
+    return;
+  }
+
+  if (!jerseyVal || jerseyVal < 1 || jerseyVal > 99) {
+    showError('playerSuccess', '❌ Jersey number must be between 1-99');
+    return;
+  }
+
+  if(players.length >= 60){
+    showError('playerSuccess', '❌ Maximum 60 players reached');
+    return;
+  }
+
+  // Check for duplicate jersey number
+  if(players.find(p => p.jersey === jerseyVal)){
+    showError('playerSuccess', '❌ Jersey number already in use');
+    return;
+  }
+
+  players.push({
+    name: playerNameVal,
+    rank: rankVal,
+    overall: overallVal,
+    jersey: jerseyVal
+  });
+
+  renderPlayers();
+  showSuccess('playerSuccess', '✅ Player added successfully!');
+  updateHomeStats();
+
+  // Clear inputs
+  document.getElementById("playerName").value = "";
+  document.getElementById("rank").value = "";
+  document.getElementById("overall").value = "";
+  document.getElementById("jersey").value = "";
+}
+
+function deletePlayer(index){
+  if(confirm("Delete this player?")){
+    players.splice(index, 1);
+    renderPlayers();
+    showSuccess('playerSuccess', '✅ Player removed!');
+    updateHomeStats();
+  }
+}
+
+function renderPlayers(){
+  let box = document.getElementById("playerList");
+  box.innerHTML = "";
+
+  if(players.length === 0){
+    box.innerHTML = `<div class="card"><div class="card-content">No players added yet</div></div>`;
+    return;
+  }
+
+  players.forEach((p, i) => {
+    const avgRating = p.overall;
+    box.innerHTML += `
+    <div class="card">
+      <div class="card-header">#${p.jersey} ${p.name}</div>
+      <div class="card-content">
+        Position: <strong>${p.rank}</strong><br>
+        Overall: <strong>${avgRating}</strong>
+      </div>
+      <div class="card-actions">
+        <button onclick="deletePlayer(${i})" class="btn-danger">Delete</button>
+      </div>
+    </div>`;
+  });
+}
+
+renderPlayers();
+
+/* ===== LEAGUE ENGINE ===== */
+let table = {};
+let matches = [];
+
+function simulateMatch(a, b){
+  let aPower = avg(a.players);
+  let bPower = avg(b.players);
+
+  let ag = Math.floor(Math.random() * (aPower / 15 + 1));
+  let bg = Math.floor(Math.random() * (bPower / 15 + 1));
+
+  return {
+    home: a.name,
+    away: b.name,
+    score: `${ag}-${bg}`,
+    date: new Date().toLocaleDateString()
+  };
+}
+
+function avg(p){
+  if(!p || p.length === 0) return 50;
+  return Math.round(p.reduce((s, x) => s + Number(x.overall), 0) / p.length);
+}
+
+function updateTable(m){
+  let [h, a] = m.score.split("-").map(Number);
+
+  if(!table[m.home]) table[m.home] = {p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0};
+  if(!table[m.away]) table[m.away] = {p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0};
+
+  table[m.home].gf += h;
+  table[m.home].ga += a;
+  table[m.away].gf += a;
+  table[m.away].ga += h;
+
+  if(h > a) {
+    table[m.home].p += 3;
+    table[m.home].w += 1;
+    table[m.away].l += 1;
+  } else if(a > h) {
+    table[m.away].p += 3;
+    table[m.away].w += 1;
+    table[m.home].l += 1;
+  } else {
+    table[m.home].p += 1;
+    table[m.away].p += 1;
+    table[m.home].d += 1;
+    table[m.away].d += 1;
+  }
+}
+
+function runSeason(){
+  if(!team.name){
+    showError('homeSuccess', '❌ Create a team first');
+    return;
+  }
+
+  if(players.length === 0){
+    showError('homeSuccess', '❌ Add at least one player to your team');
+    return;
+  }
+
+  let opponents = [
+    {name: "Elite United", players: [{overall: 82}, {overall: 78}, {overall: 75}, {overall: 80}]},
+    {name: "Thunder FC", players: [{overall: 72}, {overall: 68}, {overall: 75}]},
+    {name: "Phoenix Stars", players: [{overall: 85}, {overall: 80}, {overall: 82}]},
+    {name: "Dragon Kings", players: [{overall: 70}, {overall: 73}, {overall: 71}]}
+  ];
+
+  let opp = opponents[Math.floor(Math.random() * opponents.length)];
+  let m = simulateMatch(team, opp);
+  matches.push(m);
+  updateTable(m);
+
+  localStorage.setItem("team", JSON.stringify(team));
+  renderLeague();
+  showSuccess('homeSuccess', `✅ Match simulated! ${m.home} ${m.score} ${m.away}`);
+  updateHomeStats();
+}
+
+/* ===== LEAGUE DISPLAY ===== */
+function renderLeague(){
+  let t = document.getElementById("table");
+  let m = document.getElementById("matches");
+
+  t.innerHTML = "";
+  m.innerHTML = "";
+
+  // Sort table by points
+  let sortedTable = Object.entries(table).sort((a, b) => b[1].p - a[1].p);
+
+  sortedTable.forEach((entry, index) => {
+    let [teamName, stats] = entry;
+    t.innerHTML += `<div class="card stat">
+      <div>
+        <div class="card-header">${index + 1}. ${teamName}</div>
+        <div class="card-content">
+          Points: <strong>${stats.p}</strong> | W: ${stats.w} D: ${stats.d} L: ${stats.l} | GF: ${stats.gf} GA: ${stats.ga}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  if(matches.length === 0){
+    m.innerHTML = `<div class="card"><div class="card-content">No matches played yet</div></div>`;
+  } else {
+    matches.slice().reverse().forEach(x => {
+      m.innerHTML += `<div class="card match">${x.home} ${x.score} ${x.away} <span style="font-size: 12px; opacity: 0.7;">${x.date}</span></div>`;
+    });
+  }
+}
+
+/* ===== CHAT ===== */
+function send(){
+  const msgInput = document.getElementById("msg");
+  const msgText = msgInput.value.trim();
+
+  if(!msgText){
+    return;
+  }
+
+  let box = document.getElementById("chatBox");
+
+  // User message
+  let userMsg = document.createElement("div");
+  userMsg.className = "chat-message user";
+  userMsg.textContent = `You: ${msgText}`;
+  box.appendChild(userMsg);
+
+  chatHistory.push({user: currentUser.name, message: msgText, type: 'user'});
+
+  // Bot response
+  setTimeout(() => {
+    let botMsg = document.createElement("div");
+    botMsg.className = "chat-message bot";
+    botMsg.textContent = "V-Play AI: Thanks for the message! ✔";
+    box.appendChild(botMsg);
+
+    chatHistory.push({user: 'V-Play AI', message: 'Thanks for the message! ✔', type: 'bot'});
+    localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+  }, 600);
+
+  msgInput.value = "";
+  box.scrollTop = box.scrollHeight;
+}
+
+function loadChatHistory(){
+  let box = document.getElementById("chatBox");
+  box.innerHTML = "";
+
+  chatHistory.forEach(msg => {
+    let msgDiv = document.createElement("div");
+    msgDiv.className = `chat-message ${msg.type}`;
+    msgDiv.textContent = `${msg.user}: ${msg.message}`;
+    box.appendChild(msgDiv);
+  });
+
+  box.scrollTop = box.scrollHeight;
+}
+
+// Allow Enter key to send messages
+document.addEventListener('keypress', (e) => {
+  if(e.key === 'Enter' && document.getElementById("msg") === document.activeElement){
+    send();
+  }
+});
+
+</script>
+
 </body>
 </html>
