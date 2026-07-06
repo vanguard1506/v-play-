@@ -143,6 +143,28 @@ body {
   font-weight: 600;
 }
 
+/* LIVE STREAM BADGE */
+.recording-badge {
+  background: rgba(255,0,0,0.3);
+  border: 1px solid #ff0000;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: #ff0000;
+  font-weight: 700;
+  animation: blink 1s infinite;
+  display: none;
+}
+
+.recording-badge.active {
+  display: inline-block;
+}
+
+@keyframes blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.5; }
+}
+
 /* AUTH SECTION */
 #auth {
   width: 100%;
@@ -378,19 +400,6 @@ section h3 {
   grid-template-columns: 1fr 1fr 1fr;
 }
 
-.input-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.input-group label {
-  font-size: 12px;
-  margin-bottom: 5px;
-  color: var(--accent-main);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
 /* CARDS */
 .card {
   background: var(--card-bg);
@@ -404,13 +413,6 @@ section h3 {
 .card:hover {
   background: rgba(255,255,255,0.08);
   transform: translateX(5px);
-}
-
-.card.stat {
-  border-left-color: var(--accent-light);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .card.match {
@@ -495,48 +497,186 @@ section h3 {
   background-clip: text;
 }
 
-/* RECORDING CONTAINER */
-#recordingContainer {
+/* RECORDING TOOLBAR */
+#recordingToolbar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.95);
+  border: 2px solid #ff0000;
+  border-radius: 50px;
+  padding: 10px 20px;
+  display: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 15px;
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(255,0,0,0.3);
+}
+
+#recordingToolbar.active {
+  display: flex;
+}
+
+.recording-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ff0000;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.recording-dot {
+  width: 12px;
+  height: 12px;
+  background: #ff0000;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+.recording-timer {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 60px;
+}
+
+.toolbar-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toolbar-btn:hover {
+  background: rgba(0,255,204,0.2);
+  border-color: var(--accent-main);
+}
+
+.toolbar-btn.danger {
+  background: rgba(255,107,107,0.3);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.toolbar-btn.danger:hover {
+  background: rgba(255,107,107,0.5);
+}
+
+/* LIVE VIEWERS DISPLAY */
+#liveViewersContainer {
   position: fixed;
   top: 80px;
   right: 20px;
-  width: 350px;
-  background: rgba(0,0,0,0.95);
+  background: rgba(0,0,0,0.9);
   border: 2px solid var(--accent-main);
   border-radius: 10px;
   padding: 15px;
-  z-index: 998;
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 997;
+  display: none;
+}
+
+#liveViewersContainer.active {
+  display: block;
+}
+
+#liveViewersHeader {
+  font-weight: 700;
+  color: var(--accent-main);
+  margin-bottom: 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.viewer-item {
+  background: rgba(0,255,204,0.1);
+  border: 1px solid rgba(0,255,204,0.3);
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.viewer-item.recording {
+  background: rgba(255,0,0,0.2);
+  border-color: #ff0000;
+}
+
+.viewer-name {
+  font-weight: 600;
+  color: var(--accent-main);
+}
+
+.viewer-status {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 3px;
+}
+
+/* SCREEN SHARE DISPLAY */
+#screenShareContainer {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  width: calc(100vw - 40px);
+  max-width: 600px;
+  background: rgba(0,0,0,0.95);
+  border: 2px solid var(--accent-main);
+  border-radius: 10px;
+  padding: 0;
+  z-index: 996;
   display: none;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  max-height: 500px;
+  overflow: hidden;
 }
 
-#recordingPreview {
+#screenShareContainer.active {
+  display: block;
+}
+
+#screenShareHeader {
+  background: rgba(0,0,0,0.5);
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#screenShareHeader .title {
+  color: var(--accent-main);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+#screenShareHeader .close-btn {
+  background: none;
+  border: none;
+  color: var(--accent-main);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  margin: 0;
+  width: 25px;
+  height: 25px;
+}
+
+#screenShareStream {
   width: 100%;
-  height: 200px;
+  height: auto;
+  max-height: 450px;
   background: #000;
   border-radius: 8px;
-  margin-bottom: 10px;
-  border: 1px solid var(--accent-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--accent-main);
-}
-
-.recording-info {
-  font-size: 12px;
-  color: var(--accent-main);
-  text-align: center;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-.recording-info .timer {
-  font-weight: bold;
-  font-size: 16px;
-  margin-top: 5px;
-  color: #ff4444;
 }
 
 /* CHAT */
@@ -643,10 +783,24 @@ section h3 {
     justify-content: space-around;
   }
 
-  #recordingContainer {
-    width: 280px;
-    top: 140px;
+  #screenShareContainer {
+    left: 10px;
+    width: calc(100vw - 20px);
+    max-width: 100%;
+    top: 120px;
+  }
+
+  #liveViewersContainer {
     right: 10px;
+    max-width: calc(100vw - 20px);
+  }
+
+  #recordingToolbar {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    transform: none;
+    width: calc(100% - 20px);
   }
 }
 
@@ -666,15 +820,30 @@ section h3 {
     font-size: 11px;
   }
 
-  #recordingContainer {
-    width: calc(100% - 20px);
-    right: 10px;
-    left: 10px;
-    top: 120px;
+  #screenShareContainer {
+    left: 5px;
+    width: calc(100vw - 10px);
+    top: 100px;
+    max-height: 300px;
   }
 
   #app {
     padding: 100px 10px 10px;
+  }
+
+  #recordingToolbar {
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 8px;
+    bottom: 5px;
+    left: 5px;
+    right: 5px;
+    width: calc(100% - 10px);
+  }
+
+  .toolbar-btn {
+    padding: 6px 12px;
+    font-size: 11px;
   }
 }
 </style>
@@ -688,6 +857,9 @@ section h3 {
   <span id="connectionText">Connecting...</span>
 </div>
 
+<!-- RECORDING BADGE -->
+<span class="recording-badge" id="recordingBadge">🔴 LIVE STREAMING</span>
+
 <!-- TOP BAR -->
 <div id="topBar">
   <div class="top-bar-left">
@@ -700,15 +872,30 @@ section h3 {
   </div>
 </div>
 
-<!-- SCREEN RECORDING CONTAINER -->
-<div id="recordingContainer">
-  <div id="recordingPreview">🎬 Recording Screen...</div>
-  <div class="recording-info">
-    <div>🔴 RECORDING</div>
-    <div class="timer" id="recordingTimer">00:00</div>
+<!-- LIVE VIEWERS PANEL -->
+<div id="liveViewersContainer">
+  <div id="liveViewersHeader">👥 LIVE VIEWERS</div>
+  <div id="viewersList"></div>
+</div>
+
+<!-- SCREEN SHARE DISPLAY -->
+<div id="screenShareContainer">
+  <div id="screenShareHeader">
+    <span class="title">🎬 LIVE SCREEN SHARE</span>
+    <button class="close-btn" onclick="closeScreenShare()">✕</button>
   </div>
-  <button class="btn-small" onclick="stopScreenRecording()" style="width: 100%; margin-bottom: 5px;">⏹ Stop Recording</button>
-  <button class="btn-secondary btn-small" onclick="downloadRecording()" style="width: 100%;">⬇ Download</button>
+  <canvas id="screenShareStream"></canvas>
+</div>
+
+<!-- RECORDING TOOLBAR -->
+<div id="recordingToolbar">
+  <div class="recording-status">
+    <div class="recording-dot"></div>
+    REC
+  </div>
+  <div class="recording-timer" id="recordingTimer">00:00</div>
+  <button class="toolbar-btn danger" onclick="stopScreenRecording()">⏹ Stop</button>
+  <button class="toolbar-btn" onclick="toggleScreenShare()">👁️ View</button>
 </div>
 
 <!-- AUTH -->
@@ -751,7 +938,7 @@ section h3 {
   <button class="nav-btn" onclick="show('players', this)">👥 Players</button>
   <button class="nav-btn" onclick="show('league', this)">📊 League</button>
   <button class="nav-btn" onclick="show('chat', this)">💬 Chat</button>
-  <button class="nav-btn" onclick="startScreenRecording()">🎬 Record</button>
+  <button class="nav-btn" onclick="startScreenRecording()" id="recordBtn">🎬 Record</button>
 </nav>
 
 <!-- HOME -->
@@ -788,11 +975,14 @@ section h3 {
   
   <div class="card">
     <div class="card-header">Live Stream Status</div>
-    <div class="card-content">Ready to broadcast your match</div>
+    <div class="card-content" id="liveStatus">Ready to broadcast your match</div>
   </div>
 
-  <button onclick="startLiveStream()">▶️ Start Stream</button>
-  <button onclick="stopLiveStream()" class="btn-secondary" style="margin-top: 10px;">⏹ Stop Stream</button>
+  <button onclick="startLiveStream()" id="startStreamBtn">▶️ Start Stream</button>
+  <button onclick="stopLiveStream()" class="btn-secondary" style="margin-top: 10px; display:none;" id="stopStreamBtn">⏹ Stop Stream</button>
+  
+  <h3 style="margin-top: 30px;">Active Streams</h3>
+  <div id="activeStreamsList"></div>
 </section>
 
 <!-- TEAM -->
@@ -881,10 +1071,21 @@ section h3 {
 // =====================
 // BACKEND CONFIG
 // =====================
-const BACKEND_URL = 'ws://localhost:3000'; // Change to your server IP for mobile
+const BACKEND_URL = 'ws://localhost:3000';
 let ws = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
+
+// =====================
+// RECORDING STATE
+// =====================
+let isRecording = false;
+let recordingStartTime = null;
+let recordingInterval = null;
+let screenStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let liveViewers = [];
 
 // =====================
 // DATA MANAGEMENT SYSTEM
@@ -905,8 +1106,13 @@ class DataManager {
   }
 
   loadData(key) {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : null;
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      console.error('Error loading data:', e);
+      return null;
+    }
   }
 
   registerUser(name, email, phone, password) {
@@ -1020,7 +1226,6 @@ class DataManager {
   }
 }
 
-// Initialize Data Manager
 const dataManager = new DataManager();
 
 // =====================
@@ -1045,8 +1250,12 @@ function initWebSocket() {
     };
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      handleServerMessage(data);
+      try {
+        const data = JSON.parse(event.data);
+        handleServerMessage(data);
+      } catch (e) {
+        console.error('Error parsing message:', e);
+      }
     };
 
     ws.onerror = (error) => {
@@ -1070,8 +1279,6 @@ function attemptReconnect() {
     reconnectAttempts++;
     console.log(`Reconnecting... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
     setTimeout(initWebSocket, 3000 * reconnectAttempts);
-  } else {
-    console.log('Max reconnection attempts reached. Using local storage only.');
   }
 }
 
@@ -1095,14 +1302,20 @@ function handleServerMessage(data) {
     case 'chat_message':
       displayRemoteChatMessage(data.sender, data.message, data.timestamp);
       break;
-    case 'user_joined':
-      showMessage(`${data.user} joined the chat!`, 'info');
+    case 'recording_start':
+      addLiveViewer(data.user, 'Recording');
       break;
-    case 'user_left':
-      showMessage(`${data.user} left the chat!`, 'info');
+    case 'recording_stop':
+      removeLiveViewer(data.user);
       break;
-    case 'broadcast':
-      console.log('Broadcast from server:', data.message);
+    case 'screen_frame':
+      displayScreenFrame(data.frameData);
+      break;
+    case 'viewer_joined':
+      addLiveViewer(data.user, 'Watching');
+      break;
+    case 'viewer_left':
+      removeLiveViewer(data.user);
       break;
   }
 }
@@ -1110,9 +1323,178 @@ function handleServerMessage(data) {
 function sendToServer(messageData) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(messageData));
-  } else {
-    console.warn('WebSocket not connected. Message queued locally.');
   }
+}
+
+// =====================
+// SCREEN RECORDING
+// =====================
+
+async function startScreenRecording() {
+  try {
+    if (isRecording) {
+      showMessage('Recording already in progress!', 'error');
+      return;
+    }
+
+    screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: 'always' },
+      audio: false
+    });
+
+    isRecording = true;
+    recordingStartTime = Date.now();
+    recordedChunks = [];
+
+    mediaRecorder = new MediaRecorder(screenStream, {
+      mimeType: 'video/webm;codecs=vp9'
+    });
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstart = () => {
+      document.getElementById('recordingToolbar').classList.add('active');
+      document.getElementById('recordingBadge').classList.add('active');
+      startRecordingTimer();
+      
+      sendToServer({
+        type: 'recording_start',
+        user: dataManager.currentUser.name,
+        timestamp: new Date().toISOString()
+      });
+
+      showMessage('🎬 Screen recording started!', 'success');
+    };
+
+    mediaRecorder.onstart();
+    mediaRecorder.start(100);
+
+    // Handle stream stop
+    screenStream.getVideoTracks()[0].onended = () => {
+      stopScreenRecording();
+    };
+
+  } catch (error) {
+    console.error('Error starting screen recording:', error);
+    showMessage('Error: ' + error.message, 'error');
+    isRecording = false;
+  }
+}
+
+function stopScreenRecording() {
+  if (!isRecording) return;
+
+  try {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+
+    if (screenStream) {
+      screenStream.getTracks().forEach(track => track.stop());
+    }
+
+    isRecording = false;
+    document.getElementById('recordingToolbar').classList.remove('active');
+    document.getElementById('recordingBadge').classList.remove('active');
+    clearInterval(recordingInterval);
+
+    sendToServer({
+      type: 'recording_stop',
+      user: dataManager.currentUser.name,
+      timestamp: new Date().toISOString()
+    });
+
+    // Save recording
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recording-${Date.now()}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showMessage('✅ Recording stopped and downloaded!', 'success');
+  } catch (error) {
+    console.error('Error stopping recording:', error);
+    showMessage('Error stopping recording', 'error');
+  }
+}
+
+function startRecordingTimer() {
+  recordingInterval = setInterval(() => {
+    if (isRecording) {
+      const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      document.getElementById('recordingTimer').textContent = 
+        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+  }, 1000);
+}
+
+function toggleScreenShare() {
+  const container = document.getElementById('screenShareContainer');
+  container.classList.toggle('active');
+}
+
+function closeScreenShare() {
+  document.getElementById('screenShareContainer').classList.remove('active');
+}
+
+function displayScreenFrame(frameData) {
+  if (!document.getElementById('screenShareContainer').classList.contains('active')) return;
+
+  try {
+    const canvas = document.getElementById('screenShareStream');
+    if (!canvas) return;
+
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = frameData;
+  } catch (e) {
+    console.error('Error displaying frame:', e);
+  }
+}
+
+// =====================
+// LIVE VIEWERS
+// =====================
+
+function addLiveViewer(username, status) {
+  if (!liveViewers.find(v => v.name === username)) {
+    liveViewers.push({ name: username, status, joinedAt: Date.now() });
+    updateViewersList();
+    document.getElementById('liveViewersContainer').classList.add('active');
+  }
+}
+
+function removeLiveViewer(username) {
+  liveViewers = liveViewers.filter(v => v.name !== username);
+  updateViewersList();
+  if (liveViewers.length === 0) {
+    document.getElementById('liveViewersContainer').classList.remove('active');
+  }
+}
+
+function updateViewersList() {
+  const list = document.getElementById('viewersList');
+  list.innerHTML = liveViewers.map(viewer => `
+    <div class="viewer-item ${viewer.status === 'Recording' ? 'recording' : ''}">
+      <div class="viewer-name">${viewer.name}</div>
+      <div class="viewer-status">${viewer.status}</div>
+    </div>
+  `).join('');
 }
 
 // =====================
@@ -1165,9 +1547,7 @@ function login() {
     document.getElementById('email').value = '';
     document.getElementById('password').value = '';
     
-    // Connect to backend after login
     initWebSocket();
-    
     loadDashboard();
   } else {
     errorEl.textContent = result.message;
@@ -1176,6 +1556,9 @@ function login() {
 }
 
 function logout() {
+  if (isRecording) {
+    stopScreenRecording();
+  }
   if (ws) {
     ws.close();
   }
@@ -1205,13 +1588,9 @@ function sendChatMessage() {
   const sender = dataManager.currentUser.name;
   const timestamp = new Date().toISOString();
 
-  // Add to local storage
   dataManager.addChatMessage(sender, message);
-
-  // Display locally
   displayLocalChatMessage(sender, message);
 
-  // Send to server
   sendToServer({
     type: 'chat_message',
     sender: sender,
@@ -1415,10 +1794,16 @@ function runSeason() {
 }
 
 function startLiveStream() {
+  document.getElementById('startStreamBtn').style.display = 'none';
+  document.getElementById('stopStreamBtn').style.display = 'block';
+  document.getElementById('liveStatus').textContent = '🟢 STREAMING LIVE';
   showMessage('🔴 Live stream started!', 'success');
 }
 
 function stopLiveStream() {
+  document.getElementById('startStreamBtn').style.display = 'block';
+  document.getElementById('stopStreamBtn').style.display = 'none';
+  document.getElementById('liveStatus').textContent = 'Ready to broadcast your match';
   showMessage('⏹️ Live stream stopped!', 'success');
 }
 
@@ -1440,29 +1825,23 @@ function showMessage(text, type) {
     border-radius: 8px;
     z-index: 9999;
     animation: slideIn 0.3s ease;
+    font-weight: 600;
   `;
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 3000);
 }
 
-function startScreenRecording() {
-  document.getElementById('recordingContainer').style.display = 'block';
-  showMessage('🎬 Screen recording started!', 'success');
-}
-
-function stopScreenRecording() {
-  document.getElementById('recordingContainer').style.display = 'none';
-  showMessage('✅ Recording stopped!', 'success');
-}
-
-function downloadRecording() {
-  showMessage('⬇️ Download started!', 'success');
-}
-
-// Initialize connection when page loads
+// Initialize
 window.addEventListener('DOMContentLoaded', () => {
   if (dataManager.currentUser) {
     initWebSocket();
+  }
+});
+
+// Handle page unload
+window.addEventListener('beforeunload', () => {
+  if (isRecording) {
+    stopScreenRecording();
   }
 });
 </script>
