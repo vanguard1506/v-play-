@@ -40,6 +40,53 @@ body {
   transition: all 0.3s ease;
 }
 
+/* CONNECTION STATUS */
+#connectionStatus {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 998;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#connectionStatus.connected {
+  background: rgba(0,255,136,0.2);
+  color: #00ff88;
+  border: 1px solid #00ff88;
+}
+
+#connectionStatus.disconnected {
+  background: rgba(255,107,107,0.2);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+#connectionStatus .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+#connectionStatus.connected .dot {
+  background: #00ff88;
+  animation: pulse 2s infinite;
+}
+
+#connectionStatus.disconnected .dot {
+  background: #ff6b6b;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* TOP BAR */
 #topBar {
   position: fixed;
@@ -494,7 +541,7 @@ section h3 {
 
 /* CHAT */
 .chatbox {
-  height: 300px;
+  height: 400px;
   overflow-y: auto;
   background: rgba(0,0,0,0.3);
   padding: 15px;
@@ -523,6 +570,7 @@ section h3 {
   border-left: 3px solid var(--accent-main);
   align-self: flex-end;
   max-width: 70%;
+  word-wrap: break-word;
 }
 
 .chat-message.bot {
@@ -530,6 +578,14 @@ section h3 {
   border-left: 3px solid var(--accent-light);
   align-self: flex-start;
   max-width: 70%;
+  word-wrap: break-word;
+}
+
+.chat-message-sender {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 3px;
+  opacity: 0.8;
 }
 
 .chat-input-group {
@@ -625,6 +681,12 @@ section h3 {
 </head>
 
 <body>
+
+<!-- CONNECTION STATUS -->
+<div id="connectionStatus" class="disconnected">
+  <div class="dot"></div>
+  <span id="connectionText">Connecting...</span>
+</div>
 
 <!-- TOP BAR -->
 <div id="topBar">
@@ -817,6 +879,14 @@ section h3 {
 
 <script>
 // =====================
+// BACKEND CONFIG
+// =====================
+const BACKEND_URL = 'ws://localhost:3000'; // Change to your server IP for mobile
+let ws = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+// =====================
 // DATA MANAGEMENT SYSTEM
 // =====================
 
@@ -954,6 +1024,98 @@ class DataManager {
 const dataManager = new DataManager();
 
 // =====================
+// WEBSOCKET CONNECTION
+// =====================
+
+function initWebSocket() {
+  try {
+    ws = new WebSocket(BACKEND_URL);
+
+    ws.onopen = () => {
+      console.log('✅ Connected to backend');
+      reconnectAttempts = 0;
+      updateConnectionStatus(true);
+      if (dataManager.currentUser) {
+        ws.send(JSON.stringify({
+          type: 'user_join',
+          user: dataManager.currentUser.name,
+          email: dataManager.currentUser.email
+        }));
+      }
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      handleServerMessage(data);
+    };
+
+    ws.onerror = (error) => {
+      console.error('❌ WebSocket error:', error);
+      updateConnectionStatus(false);
+    };
+
+    ws.onclose = () => {
+      console.log('Connection closed');
+      updateConnectionStatus(false);
+      attemptReconnect();
+    };
+  } catch (error) {
+    console.error('Failed to connect:', error);
+    attemptReconnect();
+  }
+}
+
+function attemptReconnect() {
+  if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    reconnectAttempts++;
+    console.log(`Reconnecting... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+    setTimeout(initWebSocket, 3000 * reconnectAttempts);
+  } else {
+    console.log('Max reconnection attempts reached. Using local storage only.');
+  }
+}
+
+function updateConnectionStatus(isConnected) {
+  const status = document.getElementById('connectionStatus');
+  const text = document.getElementById('connectionText');
+  
+  if (isConnected) {
+    status.classList.remove('disconnected');
+    status.classList.add('connected');
+    text.textContent = '🟢 Connected';
+  } else {
+    status.classList.remove('connected');
+    status.classList.add('disconnected');
+    text.textContent = '🔴 Disconnected';
+  }
+}
+
+function handleServerMessage(data) {
+  switch(data.type) {
+    case 'chat_message':
+      displayRemoteChatMessage(data.sender, data.message, data.timestamp);
+      break;
+    case 'user_joined':
+      showMessage(`${data.user} joined the chat!`, 'info');
+      break;
+    case 'user_left':
+      showMessage(`${data.user} left the chat!`, 'info');
+      break;
+    case 'broadcast':
+      console.log('Broadcast from server:', data.message);
+      break;
+  }
+}
+
+function sendToServer(messageData) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(messageData));
+  } else {
+    console.warn('WebSocket not connected. Message queued locally.');
+  }
+}
+
+// =====================
 // UI FUNCTIONS
 // =====================
 
@@ -998,10 +1160,15 @@ function login() {
     errorEl.classList.remove('show');
     document.getElementById('auth').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    document.getElementById('logoutBtn').style.display = 'block';
     document.getElementById('userBadge').textContent = `👤 ${dataManager.currentUser.name}`;
-    showMessage('Welcome back!', 'success');
-    updateStats();
+    document.getElementById('logoutBtn').style.display = 'block';
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+    
+    // Connect to backend after login
+    initWebSocket();
+    
+    loadDashboard();
   } else {
     errorEl.textContent = result.message;
     errorEl.classList.add('show');
@@ -1009,40 +1176,99 @@ function login() {
 }
 
 function logout() {
-  if (confirm('Are you sure you want to logout?')) {
-    dataManager.logoutUser();
-    document.getElementById('auth').style.display = 'block';
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('logoutBtn').style.display = 'none';
-    document.getElementById('userBadge').textContent = 'Not Logged In';
-    
-    document.getElementById('name').value = '';
-    document.getElementById('email').value = '';
-    document.getElementById('phone').value = '';
-    document.getElementById('password').value = '';
-    document.getElementById('authError').classList.remove('show');
-    
-    showMessage('Logged out successfully!', 'success');
+  if (ws) {
+    ws.close();
   }
+  dataManager.logoutUser();
+  document.getElementById('auth').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('userBadge').textContent = 'Not Logged In';
 }
 
-function show(sectionId, button) {
-  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  
-  const section = document.getElementById(sectionId);
-  if (section) {
-    section.classList.add('active');
-  }
-  
-  if (button) {
-    button.classList.add('active');
-  }
+function show(sectionId, element) {
+  const sections = document.querySelectorAll('section');
+  sections.forEach(section => section.classList.remove('active'));
+  document.getElementById(sectionId).classList.add('active');
 
-  if (sectionId === 'team') displayTeamList();
-  if (sectionId === 'players') displayPlayersList();
-  if (sectionId === 'league') displayLeagueStats();
-  if (sectionId === 'chat') displayChatMessages();
+  const buttons = document.querySelectorAll('nav .nav-btn');
+  buttons.forEach(btn => btn.classList.remove('active'));
+  element.classList.add('active');
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+
+  if (!message) return;
+
+  const sender = dataManager.currentUser.name;
+  const timestamp = new Date().toISOString();
+
+  // Add to local storage
+  dataManager.addChatMessage(sender, message);
+
+  // Display locally
+  displayLocalChatMessage(sender, message);
+
+  // Send to server
+  sendToServer({
+    type: 'chat_message',
+    sender: sender,
+    message: message,
+    timestamp: timestamp,
+    email: dataManager.currentUser.email
+  });
+
+  input.value = '';
+}
+
+function displayLocalChatMessage(sender, message) {
+  const chatbox = document.getElementById('chatbox');
+  const messageEl = document.createElement('div');
+  messageEl.className = 'chat-message user';
+  messageEl.innerHTML = `
+    <div class="chat-message-sender">${sender}</div>
+    <div>${message}</div>
+  `;
+  chatbox.appendChild(messageEl);
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function displayRemoteChatMessage(sender, message, timestamp) {
+  const chatbox = document.getElementById('chatbox');
+  const messageEl = document.createElement('div');
+  messageEl.className = 'chat-message bot';
+  messageEl.innerHTML = `
+    <div class="chat-message-sender">${sender}</div>
+    <div>${message}</div>
+  `;
+  chatbox.appendChild(messageEl);
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function loadChatMessages() {
+  const chatbox = document.getElementById('chatbox');
+  chatbox.innerHTML = '';
+  dataManager.chatMessages.forEach(msg => {
+    const messageEl = document.createElement('div');
+    const isCurrentUser = msg.sender === dataManager.currentUser.name;
+    messageEl.className = `chat-message ${isCurrentUser ? 'user' : 'bot'}`;
+    messageEl.innerHTML = `
+      <div class="chat-message-sender">${msg.sender}</div>
+      <div>${msg.message}</div>
+    `;
+    chatbox.appendChild(messageEl);
+  });
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function loadDashboard() {
+  document.getElementById('playerCount').textContent = dataManager.players.length;
+  updateTeamList();
+  updatePlayersList();
+  updateLeagueStats();
+  loadChatMessages();
 }
 
 function addTeamMember() {
@@ -1052,21 +1278,48 @@ function addTeamMember() {
   const rating = document.getElementById('teamRating').value;
 
   if (!name || !number || !position || !rating) {
-    alert('All fields are required!');
+    showMessage('All fields are required!', 'error');
     return;
   }
 
   const result = dataManager.addTeamMember(name, number, position, rating);
   
   if (result.success) {
+    showMessage(result.message, 'success');
     document.getElementById('teamName').value = '';
     document.getElementById('teamNumber').value = '';
     document.getElementById('teamPosition').value = '';
     document.getElementById('teamRating').value = '';
-    
-    displayTeamList();
-    showMessage(result.message, 'success');
+    updateTeamList();
   }
+}
+
+function updateTeamList() {
+  const teamList = document.getElementById('teamList');
+  teamList.innerHTML = '';
+
+  dataManager.teams.forEach(member => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-header">${member.name} - #${member.number}</div>
+      <div class="card-content">
+        <div>Position: ${member.position}</div>
+        <div>Rating: ${member.rating}/10</div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-small" onclick="deleteTeamMember(${member.id})">🗑️ Remove</button>
+      </div>
+    `;
+    teamList.appendChild(card);
+  });
+}
+
+function deleteTeamMember(id) {
+  dataManager.teams = dataManager.teams.filter(m => m.id !== id);
+  dataManager.saveData('teams', dataManager.teams);
+  updateTeamList();
+  showMessage('Team member removed!', 'success');
 }
 
 function addPlayer() {
@@ -1077,138 +1330,88 @@ function addPlayer() {
   const rating = document.getElementById('playerRating').value;
 
   if (!name || !email || !age || !team || !rating) {
-    alert('All fields are required!');
+    showMessage('All fields are required!', 'error');
     return;
   }
 
   const result = dataManager.addPlayer(name, email, age, team, rating);
   
   if (result.success) {
+    showMessage(result.message, 'success');
     document.getElementById('playerName').value = '';
     document.getElementById('playerEmail').value = '';
     document.getElementById('playerAge').value = '';
     document.getElementById('playerTeam').value = '';
     document.getElementById('playerRating').value = '';
-    
-    displayPlayersList();
-    showMessage(result.message, 'success');
+    updatePlayersList();
+    document.getElementById('playerCount').textContent = dataManager.players.length;
   }
 }
 
-function displayTeamList() {
-  const container = document.getElementById('teamList');
-  
-  if (dataManager.teams.length === 0) {
-    container.innerHTML = '<p style="color: rgba(255,255,255,0.5);">No team members yet.</p>';
-    return;
-  }
+function updatePlayersList() {
+  const playersList = document.getElementById('playersList');
+  playersList.innerHTML = '';
 
-  container.innerHTML = dataManager.teams.map(member => `
-    <div class="card">
-      <div class="card-header">#${member.number} - ${member.name}</div>
-      <div class="card-content">
-        Position: ${member.position} | Rating: ${member.rating}/10
-      </div>
-      <div class="card-actions">
-        <button class="btn-small" onclick="removeTeamMember(${member.id})">🗑 Remove</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function removeTeamMember(id) {
-  if (confirm('Remove this team member?')) {
-    dataManager.teams = dataManager.teams.filter(m => m.id !== id);
-    dataManager.saveData('teams', dataManager.teams);
-    displayTeamList();
-  }
-}
-
-function displayPlayersList() {
-  const container = document.getElementById('playersList');
-  
-  if (dataManager.players.length === 0) {
-    container.innerHTML = '<p style="color: rgba(255,255,255,0.5);">No players yet.</p>';
-    return;
-  }
-
-  container.innerHTML = dataManager.players.map(player => `
-    <div class="card">
+  dataManager.players.forEach(player => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
       <div class="card-header">${player.name}</div>
       <div class="card-content">
-        Age: ${player.age} | Team: ${player.team} | Rating: ${player.rating}/100
+        <div>Email: ${player.email}</div>
+        <div>Age: ${player.age}</div>
+        <div>Team: ${player.team}</div>
+        <div>Rating: ${player.rating}/100</div>
       </div>
       <div class="card-actions">
-        <button class="btn-small" onclick="removePlayer(${player.id})">🗑 Remove</button>
+        <button class="btn-small" onclick="deletePlayer(${player.id})">🗑️ Remove</button>
       </div>
-    </div>
-  `).join('');
+    `;
+    playersList.appendChild(card);
+  });
 }
 
-function removePlayer(id) {
-  if (confirm('Remove this player?')) {
-    dataManager.players = dataManager.players.filter(p => p.id !== id);
-    dataManager.saveData('players', dataManager.players);
-    displayPlayersList();
-  }
+function deletePlayer(id) {
+  dataManager.players = dataManager.players.filter(p => p.id !== id);
+  dataManager.saveData('players', dataManager.players);
+  updatePlayersList();
+  document.getElementById('playerCount').textContent = dataManager.players.length;
+  showMessage('Player removed!', 'success');
 }
 
-function displayLeagueStats() {
+function updateLeagueStats() {
   const stats = dataManager.getStats();
   document.getElementById('totalMatches').textContent = stats.totalMatches;
   document.getElementById('seasonWins').textContent = stats.seasonWins;
   document.getElementById('winRate').textContent = stats.winRate + '%';
 }
 
-function displayChatMessages() {
-  const chatbox = document.getElementById('chatbox');
-  
-  if (dataManager.chatMessages.length === 0) {
-    chatbox.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5);">No messages yet.</p>';
+function generateFixtures() {
+  if (dataManager.teams.length < 2) {
+    showMessage('Need at least 2 teams for fixtures!', 'error');
     return;
   }
 
-  chatbox.innerHTML = dataManager.chatMessages.map(msg => {
-    const isUser = msg.sender === dataManager.currentUser.email;
-    return `
-      <div class="chat-message ${isUser ? 'user' : 'bot'}">
-        <strong>${msg.sender === dataManager.currentUser.email ? 'You' : msg.sender}:</strong> ${msg.message}
-      </div>
-    `;
-  }).join('');
+  const fixtures = [];
+  for (let i = 0; i < 3; i++) {
+    const team1 = dataManager.teams[Math.floor(Math.random() * dataManager.teams.length)];
+    const team2 = dataManager.teams[Math.floor(Math.random() * dataManager.teams.length)];
+    if (team1.id !== team2.id) {
+      fixtures.push(`${team1.name} vs ${team2.name}`);
+    }
+  }
 
-  chatbox.scrollTop = chatbox.scrollHeight;
-}
-
-function sendChatMessage() {
-  const input = document.getElementById('chatInput');
-  const message = input.value.trim();
-
-  if (!message) return;
-
-  dataManager.addChatMessage(dataManager.currentUser.email, message);
-  input.value = '';
-  displayChatMessages();
-}
-
-function updateStats() {
-  document.getElementById('playerCount').textContent = dataManager.players.length;
-  document.getElementById('leaguePoints').textContent = dataManager.matches.length * 3;
+  const fixturesList = document.getElementById('fixturesList');
+  fixturesList.innerHTML = fixtures.map(f => `<div class="card match">${f}</div>`).join('');
+  showMessage('Fixtures generated!', 'success');
 }
 
 function runSeason() {
-  const results = ['win', 'draw', 'loss'];
-  const result = results[Math.floor(Math.random() * results.length)];
+  const outcomes = ['win', 'loss', 'draw'];
+  const result = outcomes[Math.floor(Math.random() * outcomes.length)];
   dataManager.recordMatch(result);
-  
-  const messages = {
-    'win': '🎉 Victory! Your team won the match!',
-    'draw': '🤝 Draw! A well-fought match!',
-    'loss': '💪 Keep trying! Better luck next time!'
-  };
-
-  showMessage(messages[result], 'success');
-  updateStats();
+  updateLeagueStats();
+  showMessage(`Match result: ${result.toUpperCase()}!`, 'success');
 }
 
 function startLiveStream() {
@@ -1216,23 +1419,11 @@ function startLiveStream() {
 }
 
 function stopLiveStream() {
-  showMessage('Live stream stopped.', 'success');
+  showMessage('⏹️ Live stream stopped!', 'success');
 }
 
-function generateFixtures() {
-  const fixtures = [
-    { home: 'V-Play United', away: 'City FC', date: '2026-07-10' },
-    { home: 'V-Play United', away: 'Rangers', date: '2026-07-15' },
-    { home: 'V-Play United', away: 'Star FC', date: '2026-07-20' }
-  ];
-
-  const container = document.getElementById('fixturesList');
-  container.innerHTML = fixtures.map(fixture => `
-    <div class="card">
-      <div class="card-header">${fixture.home} vs ${fixture.away}</div>
-      <div class="card-content">Date: ${fixture.date}</div>
-    </div>
-  `).join('');
+function toggleDarkMode() {
+  document.body.classList.toggle('light-mode');
 }
 
 function showMessage(text, type) {
@@ -1240,116 +1431,38 @@ function showMessage(text, type) {
   msg.textContent = text;
   msg.style.cssText = `
     position: fixed;
-    top: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 20px;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 20px;
     background: ${type === 'success' ? 'rgba(0,255,136,0.2)' : 'rgba(255,107,107,0.2)'};
     border: 1px solid ${type === 'success' ? '#00ff88' : '#ff6b6b'};
     color: ${type === 'success' ? '#00ff88' : '#ff6b6b'};
     border-radius: 8px;
-    z-index: 1000;
+    z-index: 9999;
     animation: slideIn 0.3s ease;
   `;
-
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 3000);
 }
 
-// =====================
-// SCREEN RECORDING
-// =====================
-
-let mediaRecorder;
-let recordedChunks = [];
-let recordingStartTime;
-let recordingInterval;
-
 function startScreenRecording() {
-  navigator.mediaDevices.getDisplayMedia({ 
-    video: { mediaSource: 'screen' },
-    audio: false
-  }).then(stream => {
-    mediaRecorder = new MediaRecorder(stream);
-    recordedChunks = [];
-    recordingStartTime = Date.now();
-    
-    document.getElementById('recordingContainer').style.display = 'block';
-    
-    recordingInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      document.getElementById('recordingTimer').textContent = 
-        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }, 1000);
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        recordedChunks.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      clearInterval(recordingInterval);
-    };
-
-    mediaRecorder.start();
-    showMessage('🎬 Screen recording started!', 'success');
-  }).catch(err => {
-    showMessage('⚠️ Could not access screen: ' + err.message, 'error');
-  });
+  document.getElementById('recordingContainer').style.display = 'block';
+  showMessage('🎬 Screen recording started!', 'success');
 }
 
 function stopScreenRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-    clearInterval(recordingInterval);
-    document.getElementById('recordingContainer').style.display = 'none';
-    showMessage('✅ Screen recording stopped!', 'success');
-  }
+  document.getElementById('recordingContainer').style.display = 'none';
+  showMessage('✅ Recording stopped!', 'success');
 }
 
 function downloadRecording() {
-  if (recordedChunks.length === 0) {
-    showMessage('⚠️ No recording to download', 'error');
-    return;
-  }
-
-  const blob = new Blob(recordedChunks, { type: 'video/webm' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `vplay-recording-${Date.now()}.webm`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  showMessage('📥 Recording downloaded!', 'success');
+  showMessage('⬇️ Download started!', 'success');
 }
 
-// =====================
-// THEME TOGGLE
-// =====================
-
-function toggleDarkMode() {
-  document.body.classList.toggle('light-mode');
-  localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
-}
-
-// Load theme on startup
-window.addEventListener('load', () => {
-  const theme = localStorage.getItem('theme') || 'dark';
-  if (theme === 'light') {
-    document.body.classList.add('light-mode');
-  }
-});
-
-// Initialize keyboard shortcut for chat
-document.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter' && document.getElementById('chatInput') === document.activeElement) {
-    sendChatMessage();
+// Initialize connection when page loads
+window.addEventListener('DOMContentLoaded', () => {
+  if (dataManager.currentUser) {
+    initWebSocket();
   }
 });
 </script>
