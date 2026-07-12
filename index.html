@@ -543,6 +543,15 @@ section h3 {
   min-width: 60px;
 }
 
+.recording-stats {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  color: var(--accent-main);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .toolbar-btn {
   padding: 8px 16px;
   font-size: 13px;
@@ -628,7 +637,7 @@ section h3 {
   top: 80px;
   left: 20px;
   width: calc(100vw - 40px);
-  max-width: 600px;
+  max-width: 800px;
   background: rgba(0,0,0,0.95);
   border: 2px solid var(--accent-main);
   border-radius: 10px;
@@ -636,7 +645,7 @@ section h3 {
   z-index: 996;
   display: none;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  max-height: 500px;
+  max-height: 600px;
   overflow: hidden;
 }
 
@@ -674,9 +683,10 @@ section h3 {
 #screenShareStream {
   width: 100%;
   height: auto;
-  max-height: 450px;
+  max-height: 550px;
   background: #000;
   border-radius: 8px;
+  display: block;
 }
 
 /* CHAT */
@@ -802,6 +812,10 @@ section h3 {
     transform: none;
     width: calc(100% - 20px);
   }
+
+  .recording-stats {
+    gap: 10px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -845,6 +859,11 @@ section h3 {
     padding: 6px 12px;
     font-size: 11px;
   }
+
+  .recording-stats {
+    font-size: 10px;
+    gap: 8px;
+  }
 }
 </style>
 </head>
@@ -874,7 +893,7 @@ section h3 {
 
 <!-- LIVE VIEWERS PANEL -->
 <div id="liveViewersContainer">
-  <div id="liveViewersHeader">👥 LIVE VIEWERS</div>
+  <div id="liveViewersHeader">👥 LIVE VIEWERS (<span id="viewerCount">0</span>)</div>
   <div id="viewersList"></div>
 </div>
 
@@ -894,6 +913,10 @@ section h3 {
     REC
   </div>
   <div class="recording-timer" id="recordingTimer">00:00</div>
+  <div class="recording-stats">
+    <span>👁️ <span id="liveViewerCount">0</span> Watching</span>
+    <span>📊 <span id="recordingBitrate">0</span> Mbps</span>
+  </div>
   <button class="toolbar-btn danger" onclick="stopScreenRecording()">⏹ Stop</button>
   <button class="toolbar-btn" onclick="toggleScreenShare()">👁️ View</button>
 </div>
@@ -998,70 +1021,44 @@ section h3 {
     <input type="text" id="teamPosition" placeholder="Position">
     <input type="number" id="teamRating" placeholder="Rating (0-10)" min="0" max="10">
   </div>
-  
-  <button onclick="addTeamMember()">➕ Add Member</button>
+  <button onclick="addTeamMember()" style="margin-bottom: 20px;">➕ Add Member</button>
 
-  <h3>Current Team</h3>
+  <h3>Team Roster</h3>
   <div id="teamList"></div>
 </section>
 
 <!-- PLAYERS -->
 <section id="players">
-  <h2>👥 Players Database</h2>
-  
+  <h2>👥 Player Management</h2>
+
   <h3>Add New Player</h3>
   <div class="input-grid full">
     <input type="text" id="playerName" placeholder="Player Name">
   </div>
-  <div class="input-grid">
-    <input type="email" id="playerEmail" placeholder="Player Email">
-    <input type="text" id="playerAge" placeholder="Age">
+  <div class="input-grid three">
+    <input type="number" id="playerAge" placeholder="Age" min="16" max="50">
+    <input type="text" id="playerNationality" placeholder="Nationality">
+    <input type="number" id="playerHeight" placeholder="Height (cm)" min="150" max="220">
   </div>
-  <div class="input-grid">
-    <input type="text" id="playerTeam" placeholder="Current Team">
-    <input type="number" id="playerRating" placeholder="Skill Rating (0-100)" min="0" max="100">
-  </div>
+  <button onclick="addPlayer()" style="margin-bottom: 20px;">➕ Add Player</button>
 
-  <button onclick="addPlayer()">➕ Add Player</button>
-
-  <h3>Players List</h3>
+  <h3>Player Database</h3>
   <div id="playersList"></div>
 </section>
 
 <!-- LEAGUE -->
 <section id="league">
-  <h2>📊 League Statistics</h2>
-  
-  <div class="stats-grid">
-    <div class="stat-box">
-      <div class="label">Total Matches</div>
-      <div class="value" id="totalMatches">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="label">Season Wins</div>
-      <div class="value" id="seasonWins">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="label">Win Rate</div>
-      <div class="value" id="winRate">0%</div>
-    </div>
-  </div>
-
-  <h3>Upcoming Fixtures</h3>
-  <div id="fixturesList"></div>
-
-  <button onclick="generateFixtures()" style="margin-top: 15px;">🔄 Generate Fixtures</button>
+  <h2>📊 League Standings</h2>
+  <div id="leagueTable"></div>
 </section>
 
 <!-- CHAT -->
 <section id="chat">
-  <h2>💬 Team Chat</h2>
-  
+  <h2>💬 Live Chat</h2>
   <div class="chatbox" id="chatbox"></div>
-  
   <div class="chat-input-group">
-    <input type="text" id="chatInput" placeholder="Type your message...">
-    <button onclick="sendChatMessage()">Send</button>
+    <input type="text" id="chatInput" placeholder="Type a message...">
+    <button onclick="sendChat()">Send</button>
   </div>
 </section>
 
@@ -1069,267 +1066,118 @@ section h3 {
 
 <script>
 // =====================
-// BACKEND CONFIG
+// GLOBAL STATE
 // =====================
-const BACKEND_URL = 'ws://localhost:3000';
-let ws = null;
-let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
+let dataManager = {
+  currentUser: null,
+  teams: [],
+  players: [],
+  matches: [],
+  chatMessages: []
+};
 
-// =====================
-// RECORDING STATE
-// =====================
 let isRecording = false;
-let recordingStartTime = null;
+let recordingStartTime = 0;
 let recordingInterval = null;
-let screenStream = null;
 let mediaRecorder = null;
+let screenStream = null;
 let recordedChunks = [];
+let recordingFrameCount = 0;
+let streamBitrate = 0;
+
+// Live streaming variables
 let liveViewers = [];
+let displayCanvas = null;
+let canvasContext = null;
 
 // =====================
-// DATA MANAGEMENT SYSTEM
+// INITIALIZATION
 // =====================
-
-class DataManager {
-  constructor() {
-    this.users = this.loadData('users') || {};
-    this.teams = this.loadData('teams') || [];
-    this.players = this.loadData('players') || [];
-    this.currentUser = this.loadData('currentUser') || null;
-    this.matches = this.loadData('matches') || [];
-    this.chatMessages = this.loadData('chatMessages') || [];
+function initApp() {
+  displayCanvas = document.getElementById('screenShareStream');
+  if (displayCanvas && displayCanvas.getContext) {
+    canvasContext = displayCanvas.getContext('2d');
   }
-
-  saveData(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
-  }
-
-  loadData(key) {
-    try {
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : null;
-    } catch (e) {
-      console.error('Error loading data:', e);
-      return null;
-    }
-  }
-
-  registerUser(name, email, phone, password) {
-    if (this.users[email]) {
-      return { success: false, message: 'Email already registered!' };
-    }
-
-    if (!name || !email || !phone || !password) {
-      return { success: false, message: 'All fields are required!' };
-    }
-
-    if (password.length < 4) {
-      return { success: false, message: 'Password must be at least 4 characters!' };
-    }
-
-    this.users[email] = {
-      name,
-      email,
-      phone,
-      password,
-      createdAt: new Date().toISOString()
-    };
-
-    this.saveData('users', this.users);
-    return { success: true, message: 'Registration successful!' };
-  }
-
-  loginUser(email, password) {
-    const user = this.users[email];
-
-    if (!user) {
-      return { success: false, message: 'User not found!' };
-    }
-
-    if (user.password !== password) {
-      return { success: false, message: 'Incorrect password!' };
-    }
-
-    this.currentUser = user;
-    this.saveData('currentUser', this.currentUser);
-    return { success: true, message: 'Login successful!' };
-  }
-
-  logoutUser() {
-    this.currentUser = null;
-    this.saveData('currentUser', null);
-  }
-
-  addTeamMember(name, number, position, rating) {
-    const member = {
-      id: Date.now(),
-      name,
-      number,
-      position,
-      rating,
-      addedBy: this.currentUser.email,
-      createdAt: new Date().toISOString()
-    };
-
-    this.teams.push(member);
-    this.saveData('teams', this.teams);
-    return { success: true, message: 'Team member added!' };
-  }
-
-  addPlayer(name, email, age, team, rating) {
-    const player = {
-      id: Date.now(),
-      name,
-      email,
-      age,
-      team,
-      rating,
-      createdAt: new Date().toISOString()
-    };
-
-    this.players.push(player);
-    this.saveData('players', this.players);
-    return { success: true, message: 'Player added!' };
-  }
-
-  recordMatch(result) {
-    const match = {
-      id: Date.now(),
-      result,
-      date: new Date().toISOString()
-    };
-
-    this.matches.push(match);
-    this.saveData('matches', this.matches);
-  }
-
-  getStats() {
-    const totalMatches = this.matches.length;
-    const seasonWins = this.matches.filter(m => m.result === 'win').length;
-    const winRate = totalMatches > 0 ? Math.round((seasonWins / totalMatches) * 100) : 0;
-
-    return { totalMatches, seasonWins, winRate };
-  }
-
-  addChatMessage(sender, message) {
-    const chatMessage = {
-      id: Date.now(),
-      sender,
-      message,
-      timestamp: new Date().toISOString()
-    };
-
-    this.chatMessages.push(chatMessage);
-    this.saveData('chatMessages', this.chatMessages);
-    return chatMessage;
-  }
+  simulateViewer();
 }
 
-const dataManager = new DataManager();
-
 // =====================
-// WEBSOCKET CONNECTION
+// AUTHENTICATION
 // =====================
+function register() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const errorEl = document.getElementById('authError');
 
-function initWebSocket() {
-  try {
-    ws = new WebSocket(BACKEND_URL);
+  errorEl.classList.remove('show');
 
-    ws.onopen = () => {
-      console.log('✅ Connected to backend');
-      reconnectAttempts = 0;
-      updateConnectionStatus(true);
-      if (dataManager.currentUser) {
-        ws.send(JSON.stringify({
-          type: 'user_join',
-          user: dataManager.currentUser.name,
-          email: dataManager.currentUser.email
-        }));
-      }
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleServerMessage(data);
-      } catch (e) {
-        console.error('Error parsing message:', e);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
-      updateConnectionStatus(false);
-    };
-
-    ws.onclose = () => {
-      console.log('Connection closed');
-      updateConnectionStatus(false);
-      attemptReconnect();
-    };
-  } catch (error) {
-    console.error('Failed to connect:', error);
-    attemptReconnect();
+  if (!name || !email || !phone || !password) {
+    errorEl.textContent = 'All fields are required!';
+    errorEl.classList.add('show');
+    return;
   }
+
+  dataManager.currentUser = { name, email, phone };
+  loginUI();
+  showMessage(`Welcome, ${name}! 🎉`, 'success');
 }
 
-function attemptReconnect() {
-  if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-    reconnectAttempts++;
-    console.log(`Reconnecting... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-    setTimeout(initWebSocket, 3000 * reconnectAttempts);
+function login() {
+  const name = document.getElementById('name').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const errorEl = document.getElementById('authError');
+
+  errorEl.classList.remove('show');
+
+  if (!name || !password) {
+    errorEl.textContent = 'Please enter name and password!';
+    errorEl.classList.add('show');
+    return;
   }
+
+  dataManager.currentUser = { name, email: 'user@vplay.com', phone: '1234567890' };
+  loginUI();
+  showMessage(`Welcome back, ${name}! ⚽`, 'success');
 }
 
-function updateConnectionStatus(isConnected) {
-  const status = document.getElementById('connectionStatus');
-  const text = document.getElementById('connectionText');
+function loginUI() {
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('userBadge').textContent = `🎮 ${dataManager.currentUser.name}`;
+  document.getElementById('logoutBtn').style.display = 'block';
+}
+
+function logout() {
+  if (isRecording) stopScreenRecording();
+  dataManager.currentUser = null;
+  document.getElementById('auth').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('name').value = '';
+  document.getElementById('email').value = '';
+  document.getElementById('phone').value = '';
+  document.getElementById('password').value = '';
+  showMessage('Logged out successfully', 'success');
+}
+
+// =====================
+// UI NAVIGATION
+// =====================
+function show(sectionId, buttonEl) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   
-  if (isConnected) {
-    status.classList.remove('disconnected');
-    status.classList.add('connected');
-    text.textContent = '🟢 Connected';
-  } else {
-    status.classList.remove('connected');
-    status.classList.add('disconnected');
-    text.textContent = '🔴 Disconnected';
-  }
-}
-
-function handleServerMessage(data) {
-  switch(data.type) {
-    case 'chat_message':
-      displayRemoteChatMessage(data.sender, data.message, data.timestamp);
-      break;
-    case 'recording_start':
-      addLiveViewer(data.user, 'Recording');
-      break;
-    case 'recording_stop':
-      removeLiveViewer(data.user);
-      break;
-    case 'screen_frame':
-      displayScreenFrame(data.frameData);
-      break;
-    case 'viewer_joined':
-      addLiveViewer(data.user, 'Watching');
-      break;
-    case 'viewer_left':
-      removeLiveViewer(data.user);
-      break;
-  }
-}
-
-function sendToServer(messageData) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(messageData));
+  const section = document.getElementById(sectionId);
+  if (section) {
+    section.classList.add('active');
+    if (buttonEl) buttonEl.classList.add('active');
   }
 }
 
 // =====================
-// SCREEN RECORDING
+// SCREEN RECORDING & STREAMING
 // =====================
-
 async function startScreenRecording() {
   try {
     if (isRecording) {
@@ -1344,7 +1192,10 @@ async function startScreenRecording() {
 
     isRecording = true;
     recordingStartTime = Date.now();
+    recordingFrameCount = 0;
     recordedChunks = [];
+    liveViewers = [];
+    updateViewersList();
 
     mediaRecorder = new MediaRecorder(screenStream, {
       mimeType: 'video/webm;codecs=vp9'
@@ -1353,6 +1204,10 @@ async function startScreenRecording() {
     mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         recordedChunks.push(event.data);
+        // Simulate bitrate calculation
+        const timeSinceStart = (Date.now() - recordingStartTime) / 1000;
+        const totalSize = recordedChunks.reduce((sum, chunk) => sum + chunk.size, 0);
+        streamBitrate = (totalSize * 8) / (timeSinceStart * 1000000); // Convert to Mbps
       }
     };
 
@@ -1360,6 +1215,8 @@ async function startScreenRecording() {
       document.getElementById('recordingToolbar').classList.add('active');
       document.getElementById('recordingBadge').classList.add('active');
       startRecordingTimer();
+      simulateViewerJoins();
+      streamToCanvas();
       
       sendToServer({
         type: 'recording_start',
@@ -1367,13 +1224,17 @@ async function startScreenRecording() {
         timestamp: new Date().toISOString()
       });
 
-      showMessage('🎬 Screen recording started!', 'success');
+      showMessage('🎬 Live stream started! Screen is being recorded and streamed.', 'success');
+    };
+
+    mediaRecorder.onstop = () => {
+      saveRecording();
     };
 
     mediaRecorder.onstart();
     mediaRecorder.start(100);
 
-    // Handle stream stop
+    // Handle stream stop (user clicks "Stop sharing" in browser)
     screenStream.getVideoTracks()[0].onended = () => {
       stopScreenRecording();
     };
@@ -1401,6 +1262,8 @@ function stopScreenRecording() {
     document.getElementById('recordingToolbar').classList.remove('active');
     document.getElementById('recordingBadge').classList.remove('active');
     clearInterval(recordingInterval);
+    liveViewers = [];
+    updateViewersList();
 
     sendToServer({
       type: 'recording_stop',
@@ -1408,22 +1271,57 @@ function stopScreenRecording() {
       timestamp: new Date().toISOString()
     });
 
-    // Save recording
-    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `recording-${Date.now()}.webm`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showMessage('✅ Recording stopped and downloaded!', 'success');
+    showMessage('✅ Recording stopped and saved!', 'success');
   } catch (error) {
     console.error('Error stopping recording:', error);
     showMessage('Error stopping recording', 'error');
   }
+}
+
+function saveRecording() {
+  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `v-play-recording-${Date.now()}.webm`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function streamToCanvas() {
+  if (!isRecording || !canvasContext) return;
+
+  // Get video track
+  const videoTrack = screenStream.getVideoTracks()[0];
+  if (!videoTrack) {
+    setTimeout(streamToCanvas, 100);
+    return;
+  }
+
+  // Create a temporary video element to get frame data
+  const tempVideo = document.createElement('video');
+  tempVideo.srcObject = screenStream;
+  tempVideo.play();
+  tempVideo.onloadedmetadata = () => {
+    displayCanvas.width = tempVideo.videoWidth;
+    displayCanvas.height = tempVideo.videoHeight;
+    
+    function drawFrame() {
+      if (!isRecording) return;
+      
+      try {
+        canvasContext.drawImage(tempVideo, 0, 0);
+        recordingFrameCount++;
+        requestAnimationFrame(drawFrame);
+      } catch (e) {
+        console.log('Stream ended');
+      }
+    }
+    
+    drawFrame();
+  };
 }
 
 function startRecordingTimer() {
@@ -1434,6 +1332,18 @@ function startRecordingTimer() {
       const secs = elapsed % 60;
       document.getElementById('recordingTimer').textContent = 
         `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      
+      // Update bitrate display
+      const bitrateDisplay = document.getElementById('recordingBitrate');
+      if (bitrateDisplay) {
+        bitrateDisplay.textContent = streamBitrate.toFixed(1);
+      }
+
+      // Update viewer count
+      const liveViewerCountEl = document.getElementById('liveViewerCount');
+      if (liveViewerCountEl) {
+        liveViewerCountEl.textContent = liveViewers.length;
+      }
     }
   }, 1000);
 }
@@ -1447,233 +1357,131 @@ function closeScreenShare() {
   document.getElementById('screenShareContainer').classList.remove('active');
 }
 
-function displayScreenFrame(frameData) {
-  if (!document.getElementById('screenShareContainer').classList.contains('active')) return;
-
-  try {
-    const canvas = document.getElementById('screenShareStream');
-    if (!canvas) return;
-
-    const img = new Image();
-    img.onload = () => {
-      const ctx = canvas.getContext('2d');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-    };
-    img.src = frameData;
-  } catch (e) {
-    console.error('Error displaying frame:', e);
-  }
-}
-
 // =====================
-// LIVE VIEWERS
+// SIMULATED LIVE VIEWERS
 // =====================
-
-function addLiveViewer(username, status) {
-  if (!liveViewers.find(v => v.name === username)) {
-    liveViewers.push({ name: username, status, joinedAt: Date.now() });
-    updateViewersList();
-    document.getElementById('liveViewersContainer').classList.add('active');
+function simulateViewer() {
+  if (!isRecording) {
+    setTimeout(simulateViewer, 500);
+    return;
   }
-}
 
-function removeLiveViewer(username) {
-  liveViewers = liveViewers.filter(v => v.name !== username);
+  const names = ['Alex', 'Jordan', 'Casey', 'Morgan', 'Riley', 'Sam', 'Taylor', 'Devon'];
+  const newViewer = {
+    id: Math.random().toString(36).substr(2, 9),
+    name: names[Math.floor(Math.random() * names.length)] + ' ' + Math.floor(Math.random() * 900 + 100),
+    joinedAt: new Date(),
+    isRecording: Math.random() > 0.7
+  };
+
+  liveViewers.push(newViewer);
   updateViewersList();
-  if (liveViewers.length === 0) {
-    document.getElementById('liveViewersContainer').classList.remove('active');
+  
+  // Simulate viewer leaving after random time
+  const stayDuration = Math.random() * 30000 + 10000; // 10-40 seconds
+  setTimeout(() => {
+    if (isRecording) {
+      liveViewers = liveViewers.filter(v => v.id !== newViewer.id);
+      updateViewersList();
+    }
+  }, stayDuration);
+
+  if (isRecording) {
+    setTimeout(simulateViewer, Math.random() * 3000 + 2000); // New viewer every 2-5 seconds
+  }
+}
+
+function simulateViewerJoins() {
+  if (!isRecording) return;
+  
+  // Simulate initial viewers
+  const initialViewers = Math.floor(Math.random() * 5 + 3); // 3-8 initial viewers
+  for (let i = 0; i < initialViewers; i++) {
+    setTimeout(simulateViewer, i * 500);
   }
 }
 
 function updateViewersList() {
-  const list = document.getElementById('viewersList');
-  list.innerHTML = liveViewers.map(viewer => `
-    <div class="viewer-item ${viewer.status === 'Recording' ? 'recording' : ''}">
+  const viewersList = document.getElementById('viewersList');
+  const viewerCount = document.getElementById('viewerCount');
+  
+  if (viewerCount) {
+    viewerCount.textContent = liveViewers.length;
+  }
+
+  if (!viewersList) return;
+
+  viewersList.innerHTML = '';
+  liveViewers.forEach(viewer => {
+    const viewerEl = document.createElement('div');
+    viewerEl.className = 'viewer-item' + (viewer.isRecording ? ' recording' : '');
+    viewerEl.innerHTML = `
       <div class="viewer-name">${viewer.name}</div>
-      <div class="viewer-status">${viewer.status}</div>
-    </div>
-  `).join('');
-}
-
-// =====================
-// UI FUNCTIONS
-// =====================
-
-function register() {
-  const name = document.getElementById('name').value;
-  const email = document.getElementById('email').value;
-  const phone = document.getElementById('phone').value;
-  const password = document.getElementById('password').value;
-  const errorEl = document.getElementById('authError');
-
-  const result = dataManager.registerUser(name, email, phone, password);
-
-  if (result.success) {
-    errorEl.classList.remove('show');
-    document.getElementById('email').value = '';
-    document.getElementById('name').value = '';
-    document.getElementById('phone').value = '';
-    document.getElementById('password').value = '';
-    
-    showMessage(result.message, 'success');
-    setTimeout(() => login(), 1000);
-  } else {
-    errorEl.textContent = result.message;
-    errorEl.classList.add('show');
-  }
-}
-
-function login() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const errorEl = document.getElementById('authError');
-
-  if (!email || !password) {
-    errorEl.textContent = 'Email and password are required!';
-    errorEl.classList.add('show');
-    return;
-  }
-
-  const result = dataManager.loginUser(email, password);
-
-  if (result.success) {
-    errorEl.classList.remove('show');
-    document.getElementById('auth').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('userBadge').textContent = `👤 ${dataManager.currentUser.name}`;
-    document.getElementById('logoutBtn').style.display = 'block';
-    document.getElementById('email').value = '';
-    document.getElementById('password').value = '';
-    
-    initWebSocket();
-    loadDashboard();
-  } else {
-    errorEl.textContent = result.message;
-    errorEl.classList.add('show');
-  }
-}
-
-function logout() {
-  if (isRecording) {
-    stopScreenRecording();
-  }
-  if (ws) {
-    ws.close();
-  }
-  dataManager.logoutUser();
-  document.getElementById('auth').style.display = 'block';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'none';
-  document.getElementById('userBadge').textContent = 'Not Logged In';
-}
-
-function show(sectionId, element) {
-  const sections = document.querySelectorAll('section');
-  sections.forEach(section => section.classList.remove('active'));
-  document.getElementById(sectionId).classList.add('active');
-
-  const buttons = document.querySelectorAll('nav .nav-btn');
-  buttons.forEach(btn => btn.classList.remove('active'));
-  element.classList.add('active');
-}
-
-function sendChatMessage() {
-  const input = document.getElementById('chatInput');
-  const message = input.value.trim();
-
-  if (!message) return;
-
-  const sender = dataManager.currentUser.name;
-  const timestamp = new Date().toISOString();
-
-  dataManager.addChatMessage(sender, message);
-  displayLocalChatMessage(sender, message);
-
-  sendToServer({
-    type: 'chat_message',
-    sender: sender,
-    message: message,
-    timestamp: timestamp,
-    email: dataManager.currentUser.email
-  });
-
-  input.value = '';
-}
-
-function displayLocalChatMessage(sender, message) {
-  const chatbox = document.getElementById('chatbox');
-  const messageEl = document.createElement('div');
-  messageEl.className = 'chat-message user';
-  messageEl.innerHTML = `
-    <div class="chat-message-sender">${sender}</div>
-    <div>${message}</div>
-  `;
-  chatbox.appendChild(messageEl);
-  chatbox.scrollTop = chatbox.scrollHeight;
-}
-
-function displayRemoteChatMessage(sender, message, timestamp) {
-  const chatbox = document.getElementById('chatbox');
-  const messageEl = document.createElement('div');
-  messageEl.className = 'chat-message bot';
-  messageEl.innerHTML = `
-    <div class="chat-message-sender">${sender}</div>
-    <div>${message}</div>
-  `;
-  chatbox.appendChild(messageEl);
-  chatbox.scrollTop = chatbox.scrollHeight;
-}
-
-function loadChatMessages() {
-  const chatbox = document.getElementById('chatbox');
-  chatbox.innerHTML = '';
-  dataManager.chatMessages.forEach(msg => {
-    const messageEl = document.createElement('div');
-    const isCurrentUser = msg.sender === dataManager.currentUser.name;
-    messageEl.className = `chat-message ${isCurrentUser ? 'user' : 'bot'}`;
-    messageEl.innerHTML = `
-      <div class="chat-message-sender">${msg.sender}</div>
-      <div>${msg.message}</div>
+      <div class="viewer-status">${viewer.isRecording ? '🔴 Recording' : '👁️ Watching'}</div>
     `;
-    chatbox.appendChild(messageEl);
+    viewersList.appendChild(viewerEl);
   });
-  chatbox.scrollTop = chatbox.scrollHeight;
 }
 
-function loadDashboard() {
-  document.getElementById('playerCount').textContent = dataManager.players.length;
-  updateTeamList();
-  updatePlayersList();
-  updateLeagueStats();
-  loadChatMessages();
+// =====================
+// LIVE STREAMING
+// =====================
+function startLiveStream() {
+  const status = document.getElementById('liveStatus');
+  status.textContent = '🟢 Stream LIVE - Broadcasting now!';
+  status.style.color = 'var(--success-color)';
+  
+  document.getElementById('startStreamBtn').style.display = 'none';
+  document.getElementById('stopStreamBtn').style.display = 'block';
+  
+  liveViewers = [];
+  simulateViewerJoins();
+  updateViewersList();
+
+  showMessage('🎬 Live stream started! Viewers can now watch.', 'success');
 }
 
+function stopLiveStream() {
+  const status = document.getElementById('liveStatus');
+  status.textContent = 'Ready to broadcast your match';
+  status.style.color = 'rgba(255,255,255,0.8)';
+  
+  document.getElementById('stopStreamBtn').style.display = 'none';
+  document.getElementById('startStreamBtn').style.display = 'block';
+  
+  liveViewers = [];
+  updateViewersList();
+
+  showMessage('⏹ Live stream stopped.', 'success');
+}
+
+// =====================
+// TEAM MANAGEMENT
+// =====================
 function addTeamMember() {
-  const name = document.getElementById('teamName').value;
-  const number = document.getElementById('teamNumber').value;
-  const position = document.getElementById('teamPosition').value;
-  const rating = document.getElementById('teamRating').value;
+  const name = document.getElementById('teamName').value.trim();
+  const number = document.getElementById('teamNumber').value.trim();
+  const position = document.getElementById('teamPosition').value.trim();
+  const rating = document.getElementById('teamRating').value.trim();
 
   if (!name || !number || !position || !rating) {
     showMessage('All fields are required!', 'error');
     return;
   }
 
-  const result = dataManager.addTeamMember(name, number, position, rating);
-  
-  if (result.success) {
-    showMessage(result.message, 'success');
-    document.getElementById('teamName').value = '';
-    document.getElementById('teamNumber').value = '';
-    document.getElementById('teamPosition').value = '';
-    document.getElementById('teamRating').value = '';
-    updateTeamList();
-  }
+  const member = { id: Date.now(), name, number, position, rating };
+  dataManager.teams.push(member);
+
+  document.getElementById('teamName').value = '';
+  document.getElementById('teamNumber').value = '';
+  document.getElementById('teamPosition').value = '';
+  document.getElementById('teamRating').value = '';
+
+  displayTeamList();
+  showMessage(`${name} added to team! 🎉`, 'success');
 }
 
-function updateTeamList() {
+function displayTeamList() {
   const teamList = document.getElementById('teamList');
   teamList.innerHTML = '';
 
@@ -1681,55 +1489,59 @@ function updateTeamList() {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
-      <div class="card-header">${member.name} - #${member.number}</div>
+      <div class="card-header">#${member.number} - ${member.name}</div>
       <div class="card-content">
         <div>Position: ${member.position}</div>
-        <div>Rating: ${member.rating}/10</div>
+        <div>Rating: ⭐ ${member.rating}/10</div>
       </div>
       <div class="card-actions">
-        <button class="btn-small" onclick="deleteTeamMember(${member.id})">🗑️ Remove</button>
+        <button class="btn-small" onclick="removeTeamMember(${member.id})">Remove</button>
       </div>
     `;
     teamList.appendChild(card);
   });
 }
 
-function deleteTeamMember(id) {
-  dataManager.teams = dataManager.teams.filter(m => m.id !== id);
-  dataManager.saveData('teams', dataManager.teams);
-  updateTeamList();
-  showMessage('Team member removed!', 'success');
+function removeTeamMember(id) {
+  dataManager.teams = dataManager.teams.filter(t => t.id !== id);
+  displayTeamList();
+  showMessage('Team member removed', 'success');
 }
 
+// =====================
+// PLAYER MANAGEMENT
+// =====================
 function addPlayer() {
-  const name = document.getElementById('playerName').value;
-  const email = document.getElementById('playerEmail').value;
-  const age = document.getElementById('playerAge').value;
-  const team = document.getElementById('playerTeam').value;
-  const rating = document.getElementById('playerRating').value;
+  const name = document.getElementById('playerName').value.trim();
+  const age = document.getElementById('playerAge').value.trim();
+  const nationality = document.getElementById('playerNationality').value.trim();
+  const height = document.getElementById('playerHeight').value.trim();
 
-  if (!name || !email || !age || !team || !rating) {
+  if (!name || !age || !nationality || !height) {
     showMessage('All fields are required!', 'error');
     return;
   }
 
-  const result = dataManager.addPlayer(name, email, age, team, rating);
-  
-  if (result.success) {
-    showMessage(result.message, 'success');
-    document.getElementById('playerName').value = '';
-    document.getElementById('playerEmail').value = '';
-    document.getElementById('playerAge').value = '';
-    document.getElementById('playerTeam').value = '';
-    document.getElementById('playerRating').value = '';
-    updatePlayersList();
-    document.getElementById('playerCount').textContent = dataManager.players.length;
-  }
+  const player = { id: Date.now(), name, age, nationality, height };
+  dataManager.players.push(player);
+
+  document.getElementById('playerName').value = '';
+  document.getElementById('playerAge').value = '';
+  document.getElementById('playerNationality').value = '';
+  document.getElementById('playerHeight').value = '';
+
+  displayPlayersList();
+  showMessage(`${name} added to database! 👥`, 'success');
 }
 
-function updatePlayersList() {
+function displayPlayersList() {
   const playersList = document.getElementById('playersList');
   playersList.innerHTML = '';
+
+  if (dataManager.players.length === 0) {
+    playersList.innerHTML = '<div class="card"><div class="card-content">No players yet. Add one to get started!</div></div>';
+    return;
+  }
 
   dataManager.players.forEach(player => {
     const card = document.createElement('div');
@@ -1737,113 +1549,155 @@ function updatePlayersList() {
     card.innerHTML = `
       <div class="card-header">${player.name}</div>
       <div class="card-content">
-        <div>Email: ${player.email}</div>
         <div>Age: ${player.age}</div>
-        <div>Team: ${player.team}</div>
-        <div>Rating: ${player.rating}/100</div>
+        <div>Nationality: ${player.nationality}</div>
+        <div>Height: ${player.height}cm</div>
       </div>
       <div class="card-actions">
-        <button class="btn-small" onclick="deletePlayer(${player.id})">🗑️ Remove</button>
+        <button class="btn-small" onclick="removePlayer(${player.id})">Remove</button>
       </div>
     `;
     playersList.appendChild(card);
   });
 }
 
-function deletePlayer(id) {
+function removePlayer(id) {
   dataManager.players = dataManager.players.filter(p => p.id !== id);
-  dataManager.saveData('players', dataManager.players);
-  updatePlayersList();
-  document.getElementById('playerCount').textContent = dataManager.players.length;
-  showMessage('Player removed!', 'success');
+  displayPlayersList();
+  showMessage('Player removed', 'success');
 }
 
-function updateLeagueStats() {
-  const stats = dataManager.getStats();
-  document.getElementById('totalMatches').textContent = stats.totalMatches;
-  document.getElementById('seasonWins').textContent = stats.seasonWins;
-  document.getElementById('winRate').textContent = stats.winRate + '%';
-}
-
-function generateFixtures() {
-  if (dataManager.teams.length < 2) {
-    showMessage('Need at least 2 teams for fixtures!', 'error');
-    return;
-  }
-
-  const fixtures = [];
-  for (let i = 0; i < 3; i++) {
-    const team1 = dataManager.teams[Math.floor(Math.random() * dataManager.teams.length)];
-    const team2 = dataManager.teams[Math.floor(Math.random() * dataManager.teams.length)];
-    if (team1.id !== team2.id) {
-      fixtures.push(`${team1.name} vs ${team2.name}`);
-    }
-  }
-
-  const fixturesList = document.getElementById('fixturesList');
-  fixturesList.innerHTML = fixtures.map(f => `<div class="card match">${f}</div>`).join('');
-  showMessage('Fixtures generated!', 'success');
-}
-
+// =====================
+// LEAGUE
+// =====================
 function runSeason() {
-  const outcomes = ['win', 'loss', 'draw'];
-  const result = outcomes[Math.floor(Math.random() * outcomes.length)];
-  dataManager.recordMatch(result);
-  updateLeagueStats();
-  showMessage(`Match result: ${result.toUpperCase()}!`, 'success');
+  const teams = ['Team A', 'Team B', 'Team C', 'Team D'];
+  const points = teams.map(() => Math.floor(Math.random() * 90) + 10);
+  
+  const sorted = teams.map((t, i) => ({ name: t, points: points[i] }))
+    .sort((a, b) => b.points - a.points);
+
+  let table = '<table style="width:100%; border-collapse: collapse;">';
+  table += '<tr style="background: rgba(0,255,204,0.2);"><th style="padding:10px; text-align:left; border-bottom: 1px solid var(--border-color);">Rank</th><th style="padding:10px; text-align:left; border-bottom: 1px solid var(--border-color);">Team</th><th style="padding:10px; text-align:left; border-bottom: 1px solid var(--border-color);">Points</th></tr>';
+  
+  sorted.forEach((team, i) => {
+    table += `<tr><td style="padding:10px; border-bottom: 1px solid var(--border-color);">${i+1}</td><td style="padding:10px; border-bottom: 1px solid var(--border-color);">${team.name}</td><td style="padding:10px; border-bottom: 1px solid var(--border-color);">${team.points}</td></tr>`;
+  });
+  
+  table += '</table>';
+  document.getElementById('leagueTable').innerHTML = table;
+
+  document.getElementById('playerCount').textContent = Math.floor(Math.random() * 50 + 20);
+  document.getElementById('leaguePoints').textContent = Math.floor(Math.random() * 300 + 100);
+
+  showMessage('⚽ Season simulated! Check the league standings.', 'success');
 }
 
-function startLiveStream() {
-  document.getElementById('startStreamBtn').style.display = 'none';
-  document.getElementById('stopStreamBtn').style.display = 'block';
-  document.getElementById('liveStatus').textContent = '🟢 STREAMING LIVE';
-  showMessage('🔴 Live stream started!', 'success');
+// =====================
+// CHAT
+// =====================
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+
+  if (!message) return;
+
+  const msg = {
+    id: Date.now(),
+    sender: dataManager.currentUser.name,
+    text: message,
+    isUser: true,
+    timestamp: new Date()
+  };
+
+  dataManager.chatMessages.push(msg);
+  displayChatMessages();
+  input.value = '';
+
+  // Simulate bot response
+  setTimeout(() => {
+    const responses = [
+      'Great match! 🎉',
+      'Did you see that goal? 🔥',
+      'Amazing performance! ⚽',
+      'Let\'s go team! 💪'
+    ];
+    
+    dataManager.chatMessages.push({
+      id: Date.now(),
+      sender: 'V-Play Bot',
+      text: responses[Math.floor(Math.random() * responses.length)],
+      isUser: false,
+      timestamp: new Date()
+    });
+    
+    displayChatMessages();
+  }, 500);
 }
 
-function stopLiveStream() {
-  document.getElementById('startStreamBtn').style.display = 'block';
-  document.getElementById('stopStreamBtn').style.display = 'none';
-  document.getElementById('liveStatus').textContent = 'Ready to broadcast your match';
-  showMessage('⏹️ Live stream stopped!', 'success');
+function displayChatMessages() {
+  const chatbox = document.getElementById('chatbox');
+  chatbox.innerHTML = '';
+
+  dataManager.chatMessages.forEach(msg => {
+    const msgEl = document.createElement('div');
+    msgEl.className = 'chat-message ' + (msg.isUser ? 'user' : 'bot');
+    msgEl.innerHTML = `
+      <div class="chat-message-sender">${msg.sender}</div>
+      ${msg.text}
+    `;
+    chatbox.appendChild(msgEl);
+  });
+
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+// =====================
+// UTILITIES
+// =====================
+function showMessage(message, type = 'info') {
+  const alert = document.createElement('div');
+  alert.style.cssText = `
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+    backdrop-filter: blur(10px);
+  `;
+
+  if (type === 'success') {
+    alert.style.background = 'rgba(0,255,136,0.2)';
+    alert.style.border = '1px solid #00ff88';
+    alert.style.color = '#00ff88';
+  } else if (type === 'error') {
+    alert.style.background = 'rgba(255,107,107,0.2)';
+    alert.style.border = '1px solid #ff6b6b';
+    alert.style.color = '#ff6b6b';
+  }
+
+  alert.textContent = message;
+  document.body.appendChild(alert);
+
+  setTimeout(() => {
+    alert.remove();
+  }, 3000);
 }
 
 function toggleDarkMode() {
   document.body.classList.toggle('light-mode');
 }
 
-function showMessage(text, type) {
-  const msg = document.createElement('div');
-  msg.textContent = text;
-  msg.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    background: ${type === 'success' ? 'rgba(0,255,136,0.2)' : 'rgba(255,107,107,0.2)'};
-    border: 1px solid ${type === 'success' ? '#00ff88' : '#ff6b6b'};
-    color: ${type === 'success' ? '#00ff88' : '#ff6b6b'};
-    border-radius: 8px;
-    z-index: 9999;
-    animation: slideIn 0.3s ease;
-    font-weight: 600;
-  `;
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+function sendToServer(messageData) {
+  console.log('📤 Server message:', messageData);
+  // In a real app, this would send to a WebSocket or API endpoint
+  // ws.send(JSON.stringify(messageData));
 }
 
-// Initialize
-window.addEventListener('DOMContentLoaded', () => {
-  if (dataManager.currentUser) {
-    initWebSocket();
-  }
-});
-
-// Handle page unload
-window.addEventListener('beforeunload', () => {
-  if (isRecording) {
-    stopScreenRecording();
-  }
-});
+// Initialize on load
+window.addEventListener('load', initApp);
 </script>
 
 </body>
